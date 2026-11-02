@@ -1,0 +1,22 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "MyBooks_2026"
+    ports:
+      - "1433:1433"
+    volumes:
+      - dbdata:/var/opt/mssql
+
+  web:
+    build: .
+    depends_on:
+      - db
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=db;Database=BookCatalogDb;User Id=sa;Password=MyBooks_2026;TrustServerCertificate=True"
+    ports:
+      - "8080:8080"
+
+volumes:
+  dbdata:
