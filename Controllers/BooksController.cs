@@ -35,9 +35,10 @@ namespace BookCatalog.Controllers
                 return NotFound();
             }
 
-            var book = await _context.Books
-                .Include(b => b.Author)
-                .FirstOrDefaultAsync(m => m.Id == id);
+var book = await _context.Books
+    .Include(b => b.Author)
+    .Include(b => b.Genres)
+    .FirstOrDefaultAsync(m => m.Id == id);
             if (book == null)
             {
                 return NotFound();

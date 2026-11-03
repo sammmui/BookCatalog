@@ -15,6 +15,7 @@ services:
       - db
     environment:
       ConnectionStrings__DefaultConnection: "Server=db;Database=BookCatalogDb;User Id=sa;Password=MyBooks_2026;TrustServerCertificate=True"
+      ASPNETCORE_ENVIRONMENT: "Development" 
     ports:
       - "8080:8080"
 
