@@ -1,6 +1,7 @@
 using BookCatalog.Data;
 using BookCatalog.Dtos;
 using BookCatalog.Models;
+using BookCatalog.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +12,13 @@ namespace BookCatalog.Controllers.Api;
 public class GenresApiController : ControllerBase
 {
     private readonly AppDbContext _context;
-    public GenresApiController(AppDbContext context) => _context = context;
+    private readonly ApiCache _cache;
+
+    public GenresApiController(AppDbContext context, ApiCache cache)
+    {
+        _context = context;
+        _cache = cache;
+    }
 
     [HttpGet]
     public async Task<ActionResult<PagedResult<GenreDto>>> GetAll(int skip = 0, int limit = 10)
@@ -43,6 +50,7 @@ public class GenresApiController : ControllerBase
         var g = new Genre { Name = dto.Name };
         _context.Genres.Add(g);
         await _context.SaveChangesAsync();
+        _cache.Clear();
         dto.Id = g.Id;
         return CreatedAtAction(nameof(Get), new { id = g.Id }, dto);
     }
@@ -55,6 +63,7 @@ public class GenresApiController : ControllerBase
         if (string.IsNullOrWhiteSpace(dto.Name)) return BadRequest("Name is required");
         g.Name = dto.Name;
         await _context.SaveChangesAsync();
+        _cache.Clear();
         return NoContent();
     }
 
@@ -65,6 +74,7 @@ public class GenresApiController : ControllerBase
         if (g == null) return NotFound();
         _context.Genres.Remove(g);
         await _context.SaveChangesAsync();
+        _cache.Clear();
         return NoContent();
     }
 }

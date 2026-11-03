@@ -1,6 +1,7 @@
 using BookCatalog.Data;
 using BookCatalog.Dtos;
 using BookCatalog.Models;
+using BookCatalog.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +12,13 @@ namespace BookCatalog.Controllers.Api;
 public class BooksApiController : ControllerBase
 {
     private readonly AppDbContext _context;
-    public BooksApiController(AppDbContext context) => _context = context;
+    private readonly ApiCache _cache;
+
+    public BooksApiController(AppDbContext context, ApiCache cache)
+    {
+        _context = context;
+        _cache = cache;
+    }
 
     private static BookDto ToDto(Book b) => new()
     {
@@ -26,6 +33,13 @@ public class BooksApiController : ControllerBase
         if (skip < 0 || limit < 1 || limit > 100)
             return BadRequest("skip must be >= 0 and limit must be 1..100");
 
+        var key = $"books:list:{skip}:{limit}";
+        if (_cache.TryGet(key, out PagedResult<BookDto>? cached) && cached != null)
+        {
+            Response.Headers["X-Cache"] = "HIT";
+            return Ok(cached);
+        }
+
         var total = await _context.Books.CountAsync();
         var books = await _context.Books.Include(b => b.Author)
             .OrderBy(b => b.Id).Skip(skip).Take(limit).ToListAsync();
@@ -34,18 +48,34 @@ public class BooksApiController : ControllerBase
             ? $"{Request.Scheme}://{Request.Host}/api/books?skip={skip + limit}&limit={limit}"
             : null;
 
-        return Ok(new PagedResult<BookDto>
+        var result = new PagedResult<BookDto>
         {
             Items = books.Select(ToDto).ToList(),
             Total = total, Skip = skip, Limit = limit, NextLink = next
-        });
+        };
+
+        _cache.Set(key, result);
+        Response.Headers["X-Cache"] = "MISS";
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<BookDto>> Get(int id)
     {
+        var key = $"books:{id}";
+        if (_cache.TryGet(key, out BookDto? cached) && cached != null)
+        {
+            Response.Headers["X-Cache"] = "HIT";
+            return Ok(cached);
+        }
+
         var book = await _context.Books.Include(b => b.Author).FirstOrDefaultAsync(b => b.Id == id);
-        return book == null ? NotFound() : Ok(ToDto(book));
+        if (book == null) return NotFound();
+
+        var dto = ToDto(book);
+        _cache.Set(key, dto);
+        Response.Headers["X-Cache"] = "MISS";
+        return Ok(dto);
     }
 
     [HttpPost]
@@ -62,6 +92,7 @@ public class BooksApiController : ControllerBase
         };
         _context.Books.Add(book);
         await _context.SaveChangesAsync();
+        _cache.Clear();
         dto.Id = book.Id;
         return CreatedAtAction(nameof(Get), new { id = book.Id }, dto);
     }
@@ -79,6 +110,7 @@ public class BooksApiController : ControllerBase
         book.Isbn = dto.Isbn; book.Description = dto.Description;
         book.CoverPath = dto.CoverPath; book.AuthorId = dto.AuthorId;
         await _context.SaveChangesAsync();
+        _cache.Clear();
         return NoContent();
     }
 
@@ -89,6 +121,7 @@ public class BooksApiController : ControllerBase
         if (book == null) return NotFound();
         _context.Books.Remove(book);
         await _context.SaveChangesAsync();
+        _cache.Clear();
         return NoContent();
     }
 }

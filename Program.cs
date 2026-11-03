@@ -1,3 +1,4 @@
+using BookCatalog.Services;
 using BookCatalog.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ApiCache>();
 
 var app = builder.Build();
 

@@ -1,6 +1,7 @@
 using BookCatalog.Data;
 using BookCatalog.Dtos;
 using BookCatalog.Models;
+using BookCatalog.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +12,13 @@ namespace BookCatalog.Controllers.Api;
 public class AuthorsApiController : ControllerBase
 {
     private readonly AppDbContext _context;
-    public AuthorsApiController(AppDbContext context) => _context = context;
+    private readonly ApiCache _cache;
+
+    public AuthorsApiController(AppDbContext context, ApiCache cache)
+    {
+        _context = context;
+        _cache = cache;
+    }
 
     private static AuthorDto ToDto(Author a) => new()
     {
@@ -55,6 +62,7 @@ public class AuthorsApiController : ControllerBase
         };
         _context.Authors.Add(a);
         await _context.SaveChangesAsync();
+        _cache.Clear();
         dto.Id = a.Id;
         return CreatedAtAction(nameof(Get), new { id = a.Id }, dto);
     }
@@ -68,6 +76,7 @@ public class AuthorsApiController : ControllerBase
         a.Name = dto.Name; a.BirthPlace = dto.BirthPlace; a.BirthYear = dto.BirthYear;
         a.Latitude = dto.Latitude; a.Longitude = dto.Longitude;
         await _context.SaveChangesAsync();
+        _cache.Clear();
         return NoContent();
     }
 
@@ -80,6 +89,7 @@ public class AuthorsApiController : ControllerBase
             return Conflict("Author has books and cannot be deleted");
         _context.Authors.Remove(a);
         await _context.SaveChangesAsync();
+        _cache.Clear();
         return NoContent();
     }
 }
