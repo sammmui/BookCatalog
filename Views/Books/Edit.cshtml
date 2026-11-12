@@ -46,7 +46,11 @@
             <partial name="_CoverPicker" />
             <div class="form-group">
                 <label asp-for="AuthorId" class="control-label"></label>
-                <select asp-for="AuthorId" class="form-control" asp-items="ViewBag.AuthorId"></select>
+              @if (ViewBag.AuthorName != null)
+              {
+               <option value="@Model.AuthorId" selected>@ViewBag.AuthorName</option>
+              }
+             </select>
                 <span asp-validation-for="AuthorId" class="text-danger"></span>
             </div>
             <div class="form-group">
@@ -62,4 +66,5 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_AuthorSelectScripts" />
 }

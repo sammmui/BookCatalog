@@ -1,0 +1,29 @@
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(function () {
+        $("#AuthorId").select2({
+            theme: "bootstrap-5",
+            width: "100%",
+            placeholder: "Введіть від 3 символів імені автора",
+            minimumInputLength: 3,
+            language: {
+                inputTooShort: function (a) { return "Введіть ще " + (a.minimum - a.input.length) + " символ(и)"; },
+                noResults: function () { return "Нічого не знайдено"; },
+                searching: function () { return "Пошук..."; },
+                loadingMore: function () { return "Завантаження..."; }
+            },
+            ajax: {
+                url: "/api/authors/search",
+                delay: 300,
+                dataType: "json",
+                data: function (p) { return { term: p.term, page: p.page || 1 }; },
+                processResults: function (data, params) {
+                    params.page = params.page || 1;
+                    return { results: data.results, pagination: { more: data.more } };
+                }
+            }
+        });
+    });
+</script>
