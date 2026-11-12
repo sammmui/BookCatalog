@@ -1,0 +1,78 @@
+
+@{
+    ViewData["Title"] = "Статистика каталогу";
+    ViewData["Description"] = "Статистика каталогу книг: книги за роками, за авторами та найбільші за обсягом.";
+}
+
+<h1 class="fw-bold my-4">Статистика каталогу</h1>
+
+<div class="row g-3 mb-4 text-center">
+    <div class="col-4"><div class="bg-white shadow-sm rounded-4 p-3 border">
+        <div class="fs-2 fw-bold text-primary" id="totalBooks">–</div><div class="text-muted">Книг</div></div></div>
+    <div class="col-4"><div class="bg-white shadow-sm rounded-4 p-3 border">
+        <div class="fs-2 fw-bold text-primary" id="totalAuthors">–</div><div class="text-muted">Авторів</div></div></div>
+    <div class="col-4"><div class="bg-white shadow-sm rounded-4 p-3 border">
+        <div class="fs-2 fw-bold text-primary" id="totalPages">–</div><div class="text-muted">Сторінок разом</div></div></div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-lg-7">
+        <div class="bg-white shadow-sm rounded-4 p-4 border">
+            <h5 class="fw-bold">Книги за роком видання</h5>
+            <canvas id="chartYear"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="bg-white shadow-sm rounded-4 p-4 border">
+            <h5 class="fw-bold">Книги за авторами</h5>
+            <canvas id="chartAuthor"></canvas>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="bg-white shadow-sm rounded-4 p-4 border">
+            <h5 class="fw-bold">Найбільші книги за кількістю сторінок</h5>
+            <canvas id="chartPages" height="90"></canvas>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        const colors = ['#0d6efd', '#6f42c1', '#d63384', '#fd7e14', '#198754', '#20c997', '#0dcaf0', '#6c757d'];
+
+        fetch('/api/stats')
+            .then(r => r.json())
+            .then(d => {
+                document.getElementById('totalBooks').textContent = d.totalBooks;
+                document.getElementById('totalAuthors').textContent = d.totalAuthors;
+                document.getElementById('totalPages').textContent = d.totalPages;
+
+                new Chart(document.getElementById('chartYear'), {
+                    type: 'bar',
+                    data: {
+                        labels: d.byYear.map(x => x.year),
+                        datasets: [{ label: 'Кількість книг', data: d.byYear.map(x => x.count), backgroundColor: '#0d6efd' }]
+                    },
+                    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+                });
+
+                new Chart(document.getElementById('chartAuthor'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: d.byAuthor.map(x => x.author),
+                        datasets: [{ data: d.byAuthor.map(x => x.count), backgroundColor: colors }]
+                    }
+                });
+
+                new Chart(document.getElementById('chartPages'), {
+                    type: 'bar',
+                    data: {
+                        labels: d.longest.map(x => x.title),
+                        datasets: [{ label: 'Сторінок', data: d.longest.map(x => x.pages), backgroundColor: '#6f42c1' }]
+                    },
+                    options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+                });
+            });
+    </script>
+}
