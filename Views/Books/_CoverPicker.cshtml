@@ -1,0 +1,72 @@
+<div class="mb-3" id="coverPicker">
+    <label class="form-label">Файл обкладинки</label>
+    <div id="dropZone" class="rounded-3 p-4 text-center text-muted"
+         style="cursor:pointer; border:2px dashed #adb5bd;">
+        <i class="bi bi-cloud-arrow-up fs-2"></i>
+        <div>Перетягніть зображення сюди або натисніть для вибору</div>
+    </div>
+    <input type="file" id="coverFile" accept="image/*" hidden />
+    <div id="coverInfo" class="small text-muted mt-2"></div>
+    <img id="coverPreview" class="img-fluid rounded-3 shadow-sm mt-2 d-none"
+         style="max-height:260px" alt="Прев'ю обкладинки" />
+</div>
+
+<script>
+(function () {
+    const MAX = 2 * 1024 * 1024;
+    const urlInput = document.getElementById('CoverPath');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('coverFile');
+    const info = document.getElementById('coverInfo');
+    const preview = document.getElementById('coverPreview');
+
+    function showPreview(src) {
+        if (!src) { preview.classList.add('d-none'); return; }
+        preview.src = src;
+        preview.classList.remove('d-none');
+    }
+    function setInfo(text, ok) {
+        info.textContent = text;
+        info.className = 'small mt-2 ' + (ok === false ? 'text-danger' : 'text-muted');
+    }
+
+    async function handleFile(file) {
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { setInfo('Потрібен файл зображення', false); return; }
+        if (file.size > MAX) { setInfo('Файл завеликий, максимум 2 МБ', false); return; }
+
+        // File API: читаємо файл у браузері й показуємо прев'ю до збереження
+        const reader = new FileReader();
+        reader.onload = e => showPreview(e.target.result);
+        reader.readAsDataURL(file);
+
+        const meta = file.name + ' · ' + (file.size / 1024).toFixed(1) + ' КБ · ' + file.type;
+        setInfo(meta + ' · завантаження...');
+
+        const fd = new FormData();
+        fd.append('file', file);
+        try {
+            const r = await fetch('/api/covers', { method: 'POST', body: fd });
+            if (!r.ok) throw new Error(await r.text());
+            const j = await r.json();
+            urlInput.value = j.path;
+            setInfo(meta + ' · завантажено, шлях записано в CoverPath');
+        } catch (err) {
+            setInfo('Помилка завантаження: ' + err.message, false);
+        }
+    }
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+    ['dragenter', 'dragover'].forEach(ev =>
+        dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.style.background = '#f1f5ff'; }));
+    ['dragleave', 'drop'].forEach(ev =>
+        dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.style.background = ''; }));
+    dropZone.addEventListener('drop', e => handleFile(e.dataTransfer.files[0]));
+
+    // прев'ю також для посилання, введеного вручну
+    urlInput.addEventListener('input', () => showPreview(urlInput.value.trim()));
+    preview.addEventListener('error', () => preview.classList.add('d-none'));
+    if (urlInput.value) showPreview(urlInput.value);
+})();
+</script>
