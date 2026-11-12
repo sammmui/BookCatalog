@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using BookCatalog.Services;
 using BookCatalog.Data;
 using Microsoft.EntityFrameworkCore;
@@ -35,5 +36,19 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
+app.MapGet("/sitemap.xml", async (HttpContext ctx, AppDbContext db) =>
+{
+    var baseUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
+    var ids = await db.Books.Select(b => b.Id).ToListAsync();
+    var sb = new System.Text.StringBuilder();
+    sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    sb.Append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
+    sb.Append($"<url><loc>{baseUrl}/</loc></url>");
+    sb.Append($"<url><loc>{baseUrl}/Books</loc></url>");
+    foreach (var id in ids)
+        sb.Append($"<url><loc>{baseUrl}/Books/Details/{id}</loc></url>");
+    sb.Append("</urlset>");
+    return Results.Content(sb.ToString(), "application/xml");
+});
 
 app.Run();

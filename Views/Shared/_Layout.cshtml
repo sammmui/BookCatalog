@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 
-<html lang="en">
+<html lang="uk">
 
 <head>
 
@@ -9,6 +9,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>@ViewData["Title"] - BookCatalog</title>
+
+    <meta name="description" content="@(ViewData["Description"] ?? "BookCatalog — каталог прочитаних книг: автори, жанри, обкладинки та описи.")" />
+
+    <meta name="robots" content="index, follow" />
+
+    <link rel="canonical" href="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")" />
+
+    @await RenderSectionAsync("Head", required: false)
 
     <script type="importmap"></script>
 

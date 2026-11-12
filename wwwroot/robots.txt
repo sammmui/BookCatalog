@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /Books/Edit
+Disallow: /Books/Delete
+Sitemap: https://bookcatalog-2026-e4crc0exc8g0ddc3.swedencentral-01.azurewebsites.net/sitemap.xml

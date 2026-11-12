@@ -2,6 +2,43 @@
 
 @{
     ViewData["Title"] = Model.Title;
+
+    var raw = string.IsNullOrWhiteSpace(Model.Description)
+        ? $"«{Model.Title}» — {Model.Author?.Name ?? "невідомий автор"}. Сторінок: {Model.Pages}."
+        : Model.Description.Trim();
+    var desc = raw.Length > 155 ? raw.Substring(0, 152) + "..." : raw;
+    ViewData["Description"] = desc;
+
+    var pageUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}";
+
+    var ld = new Dictionary<string, object>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "Book",
+        ["name"] = Model.Title,
+        ["author"] = new Dictionary<string, object>
+        {
+            ["@type"] = "Person",
+            ["name"] = Model.Author?.Name ?? "Невідомий автор"
+        },
+        ["numberOfPages"] = Model.Pages,
+        ["description"] = desc
+    };
+    if (Model.Year != null) ld["datePublished"] = Model.Year.ToString()!;
+    if (!string.IsNullOrEmpty(Model.CoverPath)) ld["image"] = Model.CoverPath;
+}
+
+@section Head {
+    <meta property="og:type" content="book" />
+    <meta property="og:title" content="@Model.Title" />
+    <meta property="og:description" content="@desc" />
+    <meta property="og:url" content="@pageUrl" />
+    @if (!string.IsNullOrEmpty(Model.CoverPath))
+    {
+        <meta property="og:image" content="@Model.CoverPath" />
+    }
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(ld))</script>
 }
 
 <style>
